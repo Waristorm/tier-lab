@@ -2,7 +2,7 @@
 
 **Live: [mazhar-tier-lab.netlify.app](https://mazhar-tier-lab.netlify.app)**
 
-A tier-list builder that finds the images for you. Type "Cabo Verde" and it goes and gets the flag — no uploading, no hunting for a transparent PNG, no dragging files in from a downloads folder.
+A tier-list builder that finds the images for you. Type "Cabo Verde {flag}" and it goes and gets the flag — no uploading, no hunting for a transparent PNG, no dragging files in from a downloads folder.
 
 Single self-contained `index.html`, no build step, no framework, no dependencies. One serverless function does the image search. That is the whole stack.
 
