@@ -513,7 +513,7 @@ async function shareImage(){
     g.fillText(S.title || 'Tier list', 14, 76);
     // Footer with site URL
     g.fillStyle='#737373'; g.font='700 14px Inter,system-ui,sans-serif'; g.textAlign='right';
-    g.fillText('mazhar-tier-lab.netlify.app', W-16, H-12);
+    g.fillText('usetierlab.netlify.app', W-16, H-12);
     g.textAlign='left';
     const loadImg = src => new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src; });
     let y=headerH;
