@@ -30,18 +30,18 @@ Generic results are then **relevance-ranked client-side**: words from the item's
 
 ---
 
-## The part worth reading the code for
+## Inside `/api/image`
 
-`/api/image` was rebuilt from its own output rather than from source. The endpoint was live and working in production, so instead of guessing at a reimplementation I called it, read the shape of what came back, and worked backwards from the response:
+The function scrapes Bing Images server-side and normalises every hit into one small, stable shape.
 
-- `img` values were `*.mm.bing.net/th/id/OIP...&pid=Api` thumbnails, so the backend was a **Bing Images scrape**.
-- The presence of both `img` and a separate `full` field meant the scraper was reading Bing's `m="{...}"` payload on `a.iusc` anchors, where `turl` is the thumbnail and `murl` is the publisher's original.
-- `source` mapped to `purl`, the publisher page.
-- Titles came from `m.t` where present, otherwise the adjacent `a.inflnk` `aria-label`.
+- **Thumbnails** are `*.mm.bing.net/th/id/OIP...&pid=Api` URLs, which are hotlink-safe and load fast enough to fill a whole board at once.
+- **`img` and `full`** both come from Bing's `m="{...}"` payload on `a.iusc` anchors. `turl` is the thumbnail, `murl` is the publisher's original, so a tile can show a light image and still hand you the full-resolution one.
+- **`source`** is `purl`, the publisher page, so every image keeps a link back to where it came from.
+- **`title`** comes from `m.t` where present, otherwise the adjacent `a.inflnk` `aria-label`.
 
-That was enough to rebuild it exactly. It was unit-tested against a fixture of Bing's real markup (the build sandbox has no egress to bing.com), deployed, and verified against production on the first attempt.
+It is unit-tested against a fixture of Bing's real markup, because the build sandbox has no egress to bing.com.
 
-The rebuilt function is [`netlify/functions/image.mjs`](netlify/functions/image.mjs).
+Source: [`netlify/functions/image.mjs`](netlify/functions/image.mjs).
 
 ---
 
