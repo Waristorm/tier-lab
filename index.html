@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <script type="application/json" id="cowork-artifact-meta">
 {
-  "name": "Waristorm Tier Lab",
+  "name": "Tier Lab",
   "schemaVersion": 1,
-  "description": "WARISTORM · TIER LAB — tier list maker ported from the ChatGPT-hosted build. Presets (Corvette C8 colors, Fast food, Modern Talking, Pokémon GO Megas) with 40 curated verified images embedded; blank New list; drag/keyboard ranking; share codes; PNG export.",
+  "description": "Tier Lab — tier list maker. Presets (Corvette C8 colors, Fast food, Modern Talking, Pokémon GO Megas) with 40 curated verified images embedded; blank New list; drag/keyboard ranking; share codes; PNG export.",
   "mcpTools": [],
   "mcpServerNames": []
 }
@@ -12,7 +12,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WARISTORM · TIER LAB</title>
+<title>Tier Lab</title>
 <style>
 :root{--ink:#171717;--muted:#737373;--line:#d8d5cf;--paper:#f6f4ef;--card:#fffdfa}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -78,7 +78,7 @@ header .primary{min-width:132px;padding:13px 18px}
 <main>
   <header>
     <div>
-      <p class="eyebrow">WARISTORM · TIER LAB</p>
+      <p class="eyebrow">TIER LAB</p>
       <input class="title" id="titleInput" aria-label="List title" placeholder="Name this list">
       <p class="meta"><span id="metaCount"></span><span id="metaFinding"></span></p>
     </div>
@@ -441,14 +441,47 @@ function saveList(){
 }
 function deleteList(name){ store.del(`tierlist:${name}`); refreshSaved(); toast(`Deleted “${name}”.`); render(); }
 function openList(name){ const raw = store.get(`tierlist:${name}`); if (raw) applySnapshot(JSON.parse(raw)); S.showOpen=false; render(); }
+// Share codes carry only what re-running the search needs — title, prompt, tier
+// definitions, and each item's name + tier. No image data: images re-resolve
+// through the normal chain on load, which is the whole point of the app.
+const shareSnapshot = () => ({
+  v: 2,
+  title: S.title,
+  query: S.query,
+  tiers: S.tiers.map(t=>({id:t.id, label:t.label, color:t.color})),
+  items: [
+    ...S.tiers.flatMap(t=>(S.rows[t.id]||[]).map(i=>({name:i.name, tier:t.id}))),
+    ...S.bank.map(i=>({name:i.name, tier:null}))
+  ]
+});
+function applyShareSnapshot(d){
+  // Legacy share codes (pre-v2) embedded the whole board, images and all.
+  if (d && d.rows && !d.items) return applySnapshot(d);
+  pushUndo();
+  S.title = d.title || ''; S.query = d.query || '';
+  S.tiers = (Array.isArray(d.tiers) && d.tiers.length)
+    ? d.tiers.map(t=>({id:t.id, label:t.label, color:t.color}))
+    : clone(DEFAULT_TIERS);
+  S.rows = emptyRows(S.tiers);
+  S.bank = [];
+  const valid = new Set(S.tiers.map(t=>t.id));
+  (d.items || []).forEach(it=>{
+    const item = mkItem(it.name);
+    if (it.tier && valid.has(it.tier)) S.rows[it.tier].push(item);
+    else S.bank.push(item);
+  });
+  S.selected = null;
+  render();
+  if (allItems().some(i=>!i.img)) findAll(false);
+}
 async function copyShareCode(){
-  const code = btoa(unescape(encodeURIComponent(JSON.stringify(snapshot()))));
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(shareSnapshot()))));
   try { await navigator.clipboard.writeText(code); toast('Share code copied.'); }
   catch { window.prompt('Copy this share code:', code); }
 }
 function loadShareCode(){
   const code = window.prompt('Paste a share code'); if (!code) return;
-  try { applySnapshot(JSON.parse(decodeURIComponent(escape(atob(code.trim()))))); toast('List loaded. Make it yours.'); }
+  try { applyShareSnapshot(JSON.parse(decodeURIComponent(escape(atob(code.trim()))))); toast('List loaded. Make it yours.'); }
   catch { toast('That share code is invalid.'); }
 }
 function undo(){
@@ -475,7 +508,7 @@ async function shareImage(){
     g.fillStyle='#f6f4ef'; g.fillRect(0,0,W,H);
     // Branded header
     g.fillStyle='#9f1239'; g.font='850 13px Inter,system-ui,sans-serif'; g.textAlign='left'; g.textBaseline='alphabetic';
-    g.fillText('W A R I S T O R M   ·   T I E R   L A B', 16, 30);
+    g.fillText('T I E R   L A B', 16, 30);
     g.fillStyle='#171717'; g.font='900 42px Inter,system-ui,sans-serif';
     g.fillText(S.title || 'Tier list', 14, 76);
     // Footer with site URL
