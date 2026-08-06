@@ -21,80 +21,79 @@ The **Smart image prompt** is the mechanism. You write a search phrase once with
 Resolution runs as a chain, cheapest and most reliable first:
 
 1. **Name-anchored Wikipedia and Wikimedia Commons.** Results are rejected unless the title contains the item's own name, which kills the single most common failure: searching "Rapid Red Metallic" and getting a generic red car.
-2. 2. **`/api/image`**, the project's own Netlify Function. Server-side image search, returned as `{ results: [{ img, full, source, title }] }`, with hotlink-safe thumbnail URLs.
-   3. 3. **Wikipedia page images, then Openverse** as progressive fallbacks.
-     
-      4. Generic results are then **relevance-ranked client-side**: words from the item's own name are weighted 3x, other words in the prompt 1x. This is what fixed color-variant searches, where "Shadow Black" and "Carbonized Gray" were previously returning the same three cars.
-     
-      5. **Find another** cycles through the remaining candidates for any single item without re-running the whole board.
-     
-      6. ---
-     
-      7. ## The part worth reading the code for
-     
-      8. `/api/image` was rebuilt from its own output rather than from source. The endpoint was live and working in production, so instead of guessing at a reimplementation I called it, read the shape of what came back, and worked backwards from the response:
-     
-      9. - `img` values were `*.mm.bing.net/th/id/OIP...&pid=Api` thumbnails, so the backend was a **Bing Images scrape**.
-         - - The presence of both `img` and a separate `full` field meant the scraper was reading Bing's `m="{...}"` payload on `a.iusc` anchors, where `turl` is the thumbnail and `murl` is the publisher's original.
-           - - `source` mapped to `purl`, the publisher page.
-             - - Titles came from `m.t` where present, otherwise the adjacent `a.inflnk` `aria-label`.
-              
-               - That was enough to rebuild it exactly. It was unit-tested against a fixture of Bing's real markup (the build sandbox has no egress to bing.com), deployed, and verified against production on the first attempt.
-              
-               - The rebuilt function is [`netlify/functions/image.mjs`](netlify/functions/image.mjs).
-              
-               - ---
+2. **`/api/image`**, the project's own Netlify Function. Server-side image search, returned as `{ results: [{ img, full, source, title }] }`, with hotlink-safe thumbnail URLs.
+3. **Wikipedia page images, then Openverse** as progressive fallbacks.
 
-               ## Features
+Generic results are then **relevance-ranked client-side**: words from the item's own name are weighted 3x, other words in the prompt 1x. This is what fixed color-variant searches, where "Shadow Black" and "Carbonized Gray" were previously returning the same three cars.
 
-               - **Smart image prompt** with `{name}` substitution, so one phrase resolves every item
-               - - **Keyboard ranking.** Select an item, press `1` to `8` to send it to that tier, `0` or `Backspace` to return it. Ranking forty-eight items takes about three minutes instead of twenty
-                 - - **Drag and drop** for anyone who prefers it
-                   - - **Autosave and restore.** The working board persists to `localStorage` and reloads on your next visit. Boards embed base64 images and can exceed the ~5MB quota, so a failed write retries with embedded images stripped rather than silently losing the save
-                     - - **Named saves** with a delete control, guarded against writing an untitled list
-                       - - **Editable tiers.** Rename and recolor every row
-                         - - **Branded PNG export** with title and site URL, sized for sharing
-                           - - **Share codes.** Base64 board state, so someone can load your list and re-rank it themselves
-                             - - **Presets.** Fast food, Corvette C8 colors, Pokemon GO Megas
-                               - - **Upload your own image** for any item the search cannot resolve
-                                 - - **Undo** at every mutation
-                                  
-                                   - ---
+**Find another** cycles through the remaining candidates for any single item without re-running the whole board.
 
-                                   ## Running it
+---
 
-                                   Image search needs the function, which means Netlify:
+## The part worth reading the code for
 
-                                   ```bash
-                                   npm i -g netlify-cli
-                                   netlify dev
-                                   ```
+`/api/image` was rebuilt from its own output rather than from source. The endpoint was live and working in production, so instead of guessing at a reimplementation I called it, read the shape of what came back, and worked backwards from the response:
 
-                                   Deploying by zip drop: the archive must contain `index.html`, `netlify.toml`, **and** `netlify/functions/image.mjs`. The `[functions]` block in `netlify.toml` is required. Without it the function is skipped silently and `/api/image` returns 404 while the rest of the site looks perfectly fine.
+- `img` values were `*.mm.bing.net/th/id/OIP...&pid=Api` thumbnails, so the backend was a **Bing Images scrape**.
+- The presence of both `img` and a separate `full` field meant the scraper was reading Bing's `m="{...}"` payload on `a.iusc` anchors, where `turl` is the thumbnail and `murl` is the publisher's original.
+- `source` mapped to `purl`, the publisher page.
+- Titles came from `m.t` where present, otherwise the adjacent `a.inflnk` `aria-label`.
 
-                                   **Health check after any deploy:**
+That was enough to rebuild it exactly. It was unit-tested against a fixture of Bing's real markup (the build sandbox has no egress to bing.com), deployed, and verified against production on the first attempt.
 
-                                   ```bash
-                                   curl "https://<your-site>/api/image?q=big+mac"
-                                   ```
+The rebuilt function is [`netlify/functions/image.mjs`](netlify/functions/image.mjs).
 
-                                   A non-empty `results` array means the scrape is intact. `{"results":[],"error":"bing-###"}` means it broke, so roll back.
+---
 
-                                   ---
+## Features
 
-                                   ## Structure
+- **Smart image prompt** with `{name}` substitution, so one phrase resolves every item
+- **Keyboard ranking.** Select an item, press `1` to `8` to send it to that tier, `0` or `Backspace` to return it. Ranking forty-eight items takes about three minutes instead of twenty
+- **Drag and drop** for anyone who prefers it
+- **Autosave and restore.** The working board persists to `localStorage` and reloads on your next visit. Boards embed base64 images and can exceed the ~5MB quota, so a failed write retries with embedded images stripped rather than silently losing the save
+- **Named saves** with a delete control, guarded against writing an untitled list
+- **Editable tiers.** Rename and recolor every row
+- **Branded PNG export** with title and site URL, sized for sharing
+- **Share codes.** Base64 board state, so someone can load your list and re-rank it themselves
+- **Presets.** Fast food, Corvette C8 colors, Pokemon GO Megas
+- **Upload your own image** for any item the search cannot resolve
+- **Undo** at every mutation
 
-                                   ```
-                                   index.html entire app: markup, styles, logic
-                                   netlify.toml publish dir, functions dir, /api/image redirect
-                                   netlify/functions/image.mjs server-side image search
-                                   ```
+---
 
-                                   No `package.json`, no bundler, no lockfile.
+## Running it
 
-                                   ---
+Image search needs the function, which means Netlify:
 
-                                   ## License
+```bash
+npm i -g netlify-cli
+netlify dev
+```
 
-                                   MIT
-                                   
+Deploying by zip drop: the archive must contain `index.html`, `netlify.toml`, **and** `netlify/functions/image.mjs`. The `[functions]` block in `netlify.toml` is required. Without it the function is skipped silently and `/api/image` returns 404 while the rest of the site looks perfectly fine.
+
+**Health check after any deploy:**
+
+```bash
+curl "https://<your-site>/api/image?q=big+mac"
+```
+
+A non-empty `results` array means the scrape is intact. `{"results":[],"error":"bing-###"}` means it broke, so roll back.
+
+---
+
+## Structure
+
+```
+index.html entire app: markup, styles, logic
+netlify.toml publish dir, functions dir, /api/image redirect
+netlify/functions/image.mjs server-side image search
+```
+
+No `package.json`, no bundler, no lockfile.
+
+---
+
+## License
+
+MIT
