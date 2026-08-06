@@ -1,6 +1,6 @@
 # Tier Lab
 
-**Live: [mazhar-tier-lab.netlify.app](https://mazhar-tier-lab.netlify.app)**
+**Live: [usetierlab.netlify.app](https://usetierlab.netlify.app)**
 
 A tier-list builder that finds the images for you. Type "Cabo Verde {flag}" and it goes and gets the flag. No uploading, no hunting for a transparent PNG, no dragging files in from a downloads folder.
 
