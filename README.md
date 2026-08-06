@@ -22,7 +22,7 @@ Resolution runs as a chain, cheapest and most reliable first:
 
 1. **Name-anchored Wikipedia and Wikimedia Commons.** Results are rejected unless the title contains the item's own name, which kills the single most common failure: searching "Rapid Red Metallic" and getting a generic red car.
 2. 2. **`/api/image`**, the project's own Netlify Function. Server-side image search, returned as `{ results: [{ img, full, source, title }] }`, with hotlink-safe thumbnail URLs.
-   3. 3. **Wikipedia page images, then iTunes artwork, then Openverse** as progressive fallbacks.
+   3. 3. **Wikipedia page images, then Openverse** as progressive fallbacks.
      
       4. Generic results are then **relevance-ranked client-side**: words from the item's own name are weighted 3x, other words in the prompt 1x. This is what fixed color-variant searches, where "Shadow Black" and "Carbonized Gray" were previously returning the same three cars.
      
