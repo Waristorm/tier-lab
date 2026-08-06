@@ -277,15 +277,11 @@ async function providerResults(q){
     const pages = Object.values(r?.query?.pages||{}).sort((a,b)=>(a.index||0)-(b.index||0));
     pages.forEach(p=>{ if(p.thumbnail?.source) out.push({img:p.thumbnail.source, source:`https://en.wikipedia.org/?curid=${p.pageid}`, title:p.title||''}); });
   } catch{ threw++; }
-  try { // iTunes artwork (albums/singles/logos of bands)
-    const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&limit=6&media=music`).then(x=>x.json());
-    (r?.results||[]).forEach(t=>{ if(t.artworkUrl100) out.push({img:t.artworkUrl100.replace('100x100','600x600'), source:t.collectionViewUrl||t.trackViewUrl||'iTunes', title:(t.collectionName||'')+' '+(t.trackName||'')}); });
-  } catch{ threw++; }
   try { // Openverse
     const r = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=8`).then(x=>x.json());
     (r?.results||[]).forEach(t=>{ if(t.url) out.push({img:t.url, source:t.foreign_landing_url||t.url, title:t.title||''}); });
   } catch{ threw++; }
-  if (threw===3) netFailures++; else netSuccesses++;
+  if (threw===2) netFailures++; else netSuccesses++;
   searchCache[q] = out;
   return out;
 }
